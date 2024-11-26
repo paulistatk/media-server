@@ -1,0 +1,144 @@
+services:
+  qbittorrent:
+    image: linuxserver/qbittorrent:latest
+    restart: unless-stopped
+    environment:
+      - TZ=America/Sao_Paulo
+      - WEBUI_PORT=8080
+      - PUID=1000
+      - PGID=1000
+    volumes:
+      - /home/paulista/media-server/qbittorrent/config:/config
+      - /home/paulista/media-server/downloads:/downloads
+    ports:
+      - '8080:8080'
+      - '62609:62609'
+
+  jackett:
+    image: ghcr.io/linuxserver/jackett:latest
+    restart: unless-stopped
+    environment:
+      - TZ=America/Sao_Paulo
+      - PUID=1000
+      - PGID=1000
+    volumes:
+      - /home/paulista/media-server/downloads:/downloads
+      - /home/paulista/media-server/jackett/config:/config
+    ports:
+      - '9117:9117'
+
+  bazarr:
+    image: ghcr.io/linuxserver/bazarr:latest
+    restart: unless-stopped
+    environment:
+      - TZ=America/Sao_Paulo
+      - PUID=1000
+      - PGID=1000
+    volumes:
+      - /home/paulista/media-server/downloads/radarr:/movies
+      - /home/paulista/media-server/downloads/sonarr:/tv
+      - /home/paulista/media-server/bazarr/appdata/config:/config
+    ports:
+      - '6767:6767'
+
+  overseerr:
+    image: sctx/overseerr
+    restart: unless-stopped
+    depends_on:
+      - qbittorrent
+    environment:
+      - TZ=America/Sao_Paulo
+      - PORT=5055
+    volumes:
+      - /home/paulista/media-server/overseerr/config:/app/config
+    ports:
+      - '5055:5055'
+
+  prowlarr:
+    image: ghcr.io/hotio/prowlarr:latest
+    restart: unless-stopped
+    depends_on:
+      - flaresolverr
+    environment:
+      - TZ=America/Sao_Paulo
+      - PUID=1000
+      - PGID=1000
+    volumes:
+      - /home/paulista/media-server/prowlarr/config:/config
+    ports:
+      - '9696:9696'
+
+  flaresolverr:
+    image: ghcr.io/flaresolverr/flaresolverr:latest
+    restart: unless-stopped
+    volumes:
+      - /home/paulista/media-server/flaresolverr/config:/config
+    ports:
+      - '8191:8191'
+
+  sabnzbd:
+    image: lscr.io/linuxserver/sabnzbd:latest
+    restart: unless-stopped
+    environment:
+      - TZ=America/Sao_Paulo
+      - PUID=1000
+      - PGID=1000
+    volumes:
+      - /home/paulista/media-server/nzbget:/downloads
+      - /home/paulista/media-server/nzbget/incomplete:/incomplete-downloads
+      - /home/paulista/media-server/nzbget/config:/config
+    ports:
+      - '6789:6789'
+
+  radarr:
+    image: ghcr.io/linuxserver/radarr:latest
+    restart: unless-stopped
+    depends_on:
+      - qbittorrent
+    environment:
+      - TZ=America/Sao_Paulo
+      - PUID=1000
+      - PGID=1000
+    volumes:
+      - /home/paulista/media-server/radarr/appdata/config:/config
+      - /home/paulista/media-server/downloads:/downloads
+      - /home/paulista/media-server/downloads/movies:/movies
+    ports:
+      - '7878:7878'
+
+  sonarr:
+    image: ghcr.io/linuxserver/sonarr:latest
+    restart: unless-stopped
+    depends_on:
+      - qbittorrent
+    environment:
+      - TZ=America/Sao_Paulo
+      - PUID=1000
+      - PGID=1000
+    volumes:
+      - /home/paulista/media-server/sonarr/appdata/config:/config
+      - /home/paulista/media-server/downloads/tv:/tv
+      - /home/paulista/media-server/downloads:/downloads
+    ports:
+      - '8989:8989'
+
+  plex:
+    image: plexinc/pms-docker:latest
+    restart: unless-stopped
+    environment:
+      - TZ=America/Sao_Paulo
+      - PUID=1000
+      - PGID=1000
+      - VA_DRIVER=IHD
+      - PLEX_HW_TRANS_MAX=16
+    volumes:
+      - /home/paulista/media-server/plex/config:/config
+      - /home/paulista/media-server/plex/data:/data
+      - /home/paulista/media-server/plex/transcode:/transcode
+      - /media/paulista:/media
+      - /home/paulista/media-server/downloads:/downloads
+      - /home/paulista:/home
+    devices:
+      - /dev/dri:/dev/dri
+      - /dev/bus/usb:/dev/bus/usb
+    network_mode: host
